@@ -1,0 +1,8 @@
+streamlit
+transformers
+sentence-transformers
+pymilvus
+beautifulsoup4
+requests
+PyMuPDF
+numpy
