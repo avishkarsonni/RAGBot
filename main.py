@@ -2,10 +2,21 @@ import streamlit as st
 from app.scraper import scrape_web_page, extract_text_and_images_from_pdf
 from app.handler import insert_embedding, search_embedding
 from app.embeds import generate_text_embedding, generate_image_embedding
-from app.model import generate_response
 from app.util import save_uploaded_file
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
 
 st.title("RAG Chatbot with Llama")
+
+# Load the distilgpt2 model and tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained("distilgpt2")
+model = GPT2LMHeadModel.from_pretrained("distilgpt2")
+
+def generate_response(query, context):
+    input_text = f"Context: {context}\nQuery: {query}\nResponse:"
+    inputs = tokenizer.encode(input_text, return_tensors="pt")
+    outputs = model.generate(inputs, max_length=150, num_return_sequences=1)
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return response.split("Response:")[-1].strip()
 
 # Sidebar options
 option = st.sidebar.selectbox("Choose an option", ["Upload PDF", "Scrape Website", "Ask Query"])
@@ -42,7 +53,7 @@ elif option == "Ask Query":
     if st.button("Submit"):
         query_embedding = generate_text_embedding(query)
         results = search_embedding(query_embedding, top_k=5)
-        context = "\n".join([res.entity.get("metadata") for res in results])
+        context = "\n".join([res.entity.get("metadata") for res in results if res is not None and res.entity is not None])
         response = generate_response(query, context)
         st.write("Context Used:")
         st.text_area("Context", context, height=200)
