@@ -1,20 +1,25 @@
 import requests
 from bs4 import BeautifulSoup
-import fitz  # PyMuPDF
+from pdf2image import convert_from_path
+from PIL import Image
+import pytesseract
 
+# Scrape a web page
 def scrape_web_page(url):
-    """Scrape the main content from a web page."""
     response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    return soup.get_text()
+    soup = BeautifulSoup(response.text, "html.parser")
+    text = soup.get_text()
+    return text.strip()
 
+# Extract text and images from a PDF
 def extract_text_and_images_from_pdf(pdf_path):
-    """Extract text and images from a PDF."""
-    pdf_document = fitz.open(pdf_path)
-    texts, images = [], []
-    for page in pdf_document:
-        texts.append(page.get_text())
-        for image_index, img in enumerate(page.get_images(full=True)):
-            image = pdf_document.extract_image(img[0])
-            images.append(image["image"])
-    return texts, images
+    # Extract text
+    images = convert_from_path(pdf_path)
+    text_blocks = []
+    extracted_images = []
+    
+    for page_image in images:
+        text_blocks.append(pytesseract.image_to_string(page_image))
+        extracted_images.append(page_image)
+    
+    return text_blocks, extracted_images
